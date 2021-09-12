@@ -3,6 +3,7 @@ import os
 import signal
 import random
 import shutil
+import json
 from flask import Flask, request
 from flask_socketio import SocketIO, emit
 
@@ -90,7 +91,7 @@ def RunCode(code, lang, inputData=''):
                 langS["compile"].format(file='tmp/{}/code'.format(onlyKey)))
             ret_code += 800
             if ret_code != 800:
-                outputData = '[Error]Compile Error'
+                outputData = '[Error]Compile Error:\n' + outputData
             else:
                 (ret_code, outputData) = run_cmd(
                     langS["run"].format(file='tmp/{}/code'.format(onlyKey)), inputFile='tmp/{}/input.in'.format(onlyKey))
@@ -127,6 +128,59 @@ def on_run_code(data):
         "outputFile": oer
     })
 
+
+@socketio.on('new_project')
+def on_new_project(data):
+    print("Got Create Project")
+    if os.path.exists('workspace/{}'.format(data["dir"])):
+        emit('mes', {
+            "type": "error",
+            "message": "项目已经存在了"
+        })
+    else:
+        os.mkdir('workspace/{}'.format(data["dir"]))
+        with open('workspace/{}/settings.cp'.format(data["dir"]), 'w') as f:
+            f.write(json.dumps({
+                "title": data["title"],
+                "dir": data["dir"]
+            }, sort_keys=True, indent=4, separators=(',', ':')))
+        with open('workspace/{}/export.cp'.format(data["dir"]), 'w') as f:
+            f.write(json.dumps({
+                "hiddens": ["*.cp", "*.exe", "*.in", "*.out"],
+                "copies": {
+                    "source": "*.cpp",
+                    "to": "*"
+                }
+            }, sort_keys=True, indent=4, separators=(',', ':')))
+        emit('mes', {
+            "type": "success",
+            "message": "创建成功"
+        })
+        emit('enter_project', {
+            'settings': {
+                "title": data["title"],
+                "dir": data["dir"]
+            },
+            'files': os.listdir('workspace/{}/'.format(data["dir"]))
+        })
+    emit('handle_new_project', {}) 
+
+@socketio.on('all_projects')
+def on_all_projects(data):
+    allProjects = []
+    allDirs = os.listdir('workspace')
+    for i in allDirs:
+        if os.path.exists('workspace/{}/settings.cp'.format(i)):
+            with open('workspace/{}/settings.cp'.format(i), 'w') as f:
+                projectSettings = json.load(f)
+                if ('title' in projectSettings) and ('dir' in projectSettings):
+                    allProjects.append({
+                        "title": projectSettings["title"],
+                        "dir": projectSettings["dir"]
+                    })
+    emit('all_projects', {
+        'p': allProjects
+    })
 
 if __name__ == '__main__':
     print("Running at *:3000")
