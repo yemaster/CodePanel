@@ -1,24 +1,15 @@
-# mahjong-v2
+# Code Panel
 
-## Project setup
-```
-yarn install
-```
+V1.0.2
 
-### Compiles and hot-reloads for development
-```
-yarn serve
-```
+## 更新日志
 
-### Compiles and minifies for production
-```
-yarn build
-```
+- V1.0.2
+  1. 比赛模式即将上线
 
-### Lints and fixes files
-```
-yarn lint
-```
+## 使用方法
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+1. 首先准备好nodejs 和 python3
+2. pip install flask flask_socketio eventlet
+3. 前端运行yarn build然后放入后端static文件夹，后端运行python main.py
+4. 直接运行localhost:3000即可
