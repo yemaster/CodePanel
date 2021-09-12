@@ -1,0 +1,12 @@
+{
+    "copies":{
+        "source":"*.cpp",
+        "to":"*"
+    },
+    "hiddens":[
+        "*.cp",
+        "*.exe",
+        "*.in",
+        "*.out"
+    ]
+}

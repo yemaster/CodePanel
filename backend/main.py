@@ -138,32 +138,39 @@ def on_new_project(data):
             "message": "项目已经存在了"
         })
     else:
-        os.mkdir('workspace/{}'.format(data["dir"]))
-        with open('workspace/{}/settings.cp'.format(data["dir"]), 'w') as f:
-            f.write(json.dumps({
-                "title": data["title"],
-                "dir": data["dir"]
-            }, sort_keys=True, indent=4, separators=(',', ':')))
-        with open('workspace/{}/export.cp'.format(data["dir"]), 'w') as f:
-            f.write(json.dumps({
-                "hiddens": ["*.cp", "*.exe", "*.in", "*.out"],
-                "copies": {
-                    "source": "*.cpp",
-                    "to": "*"
-                }
-            }, sort_keys=True, indent=4, separators=(',', ':')))
-        emit('mes', {
-            "type": "success",
-            "message": "创建成功"
-        })
-        emit('enter_project', {
-            'settings': {
-                "title": data["title"],
-                "dir": data["dir"]
-            },
-            'files': os.listdir('workspace/{}/'.format(data["dir"]))
-        })
-    emit('handle_new_project', {}) 
+        try:
+            os.makedirs('workspace/{}'.format(data["dir"]))
+            with open('workspace/{}/settings.cp'.format(data["dir"]), 'w') as f:
+                f.write(json.dumps({
+                    "title": data["title"],
+                    "dir": data["dir"]
+                }, sort_keys=True, indent=4, separators=(',', ':')))
+            with open('workspace/{}/export.cp'.format(data["dir"]), 'w') as f:
+                f.write(json.dumps({
+                    "hiddens": ["*.cp", "*.exe", "*.in", "*.out"],
+                    "copies": {
+                        "source": "*.cpp",
+                        "to": "*"
+                    }
+                }, sort_keys=True, indent=4, separators=(',', ':')))
+            emit('mes', {
+                "type": "success",
+                "message": "创建成功"
+            })
+            emit('enter_project', {
+                'settings': {
+                    "title": data["title"],
+                    "dir": data["dir"]
+                },
+                'files': os.listdir('workspace/{}/'.format(data["dir"]))
+            })
+        except Exception as e:
+            emit('mes', {
+                "type": "error",
+                "message": "创建失败:" + str(e)
+            })
+    emit('handle_new_project', {})
+
 
 @socketio.on('all_projects')
 def on_all_projects(data):
@@ -171,16 +178,40 @@ def on_all_projects(data):
     allDirs = os.listdir('workspace')
     for i in allDirs:
         if os.path.exists('workspace/{}/settings.cp'.format(i)):
-            with open('workspace/{}/settings.cp'.format(i), 'w') as f:
-                projectSettings = json.load(f)
-                if ('title' in projectSettings) and ('dir' in projectSettings):
-                    allProjects.append({
-                        "title": projectSettings["title"],
-                        "dir": projectSettings["dir"]
+            with open('workspace/{}/settings.cp'.format(i), 'r') as f:
+                try:
+                    projectSettings = json.load(f)
+                    if ('title' in projectSettings) and ('dir' in projectSettings):
+                        allProjects.append({
+                            "title": projectSettings["title"],
+                            "dir": projectSettings["dir"]
+                        })
+                except Exception as e:
+                    emit('mes', {
+                        "type": "error",
+                        "message": "读取比赛"+i+"时错误"
                     })
     emit('all_projects', {
         'p': allProjects
     })
+
+
+@socketio.on("open_project")
+def on_open_project(data):
+    try:
+        emit('enter_project', {
+            'settings': {
+                "title": data["title"],
+                "dir": data["dir"]
+            },
+            'files': os.listdir('workspace/{}/'.format(data["dir"]))
+        })
+    except Exception as e:
+        emit('mes', {
+            "type": "error",
+            "message": "打开失败:"+str(e)
+        })
+
 
 if __name__ == '__main__':
     print("Running at *:3000")

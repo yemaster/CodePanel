@@ -66,13 +66,13 @@
                   </el-col>
                 </el-row>
               </el-tab-pane>
-              <el-tab-pane label="项目模式" name="second">
+              <el-tab-pane label="比赛模式" name="second">
                 <template v-if="opened_project == ''">
                   <el-row :gutter="20">
                     <el-col :span="12">
-                      <h3>新建项目</h3>
+                      <h3>新建比赛</h3>
                       <el-form label-position="top" :model="new_project">
-                        <el-form-item label="项目名称">
+                        <el-form-item label="比赛名称">
                           <el-input v-model="new_project.title"> </el-input>
                         </el-form-item>
                         <el-form-item label="保存文件夹名称">
@@ -91,17 +91,42 @@
                     </el-col>
                     <el-col :span="12">
                       <h3>
-                        打开项目
+                        打开比赛
                         <el-button
                           type="primary"
                           icon="el-icon-refresh"
                           circle
-                          @click="sendFre"
+                          @click="getAllProjects"
                         ></el-button>
                       </h3>
-                      
+                      <el-table
+                        :data="all_projects"
+                        style="width: 100%"
+                        height="300"
+                      >
+                        <el-table-column prop="title" label="标题">
+                        </el-table-column>
+                        <el-table-column prop="dir" label="存储路径">
+                        </el-table-column>
+                        <el-table-column fixed="right" label="操作">
+                          <template slot-scope="scope">
+                            <el-button
+                              @click="enterProject(scope.row)"
+                              type="primary"
+                              size="small"
+                              >选择</el-button
+                            >
+                            <el-button type="danger" size="small"
+                              >删除</el-button
+                            >
+                          </template>
+                        </el-table-column>
+                      </el-table>
                     </el-col>
                   </el-row>
+                </template>
+                <template v-else>
+                  <h3>{{ opened_project.settings.title }}</h3>
                 </template>
               </el-tab-pane>
             </el-tabs>
@@ -205,10 +230,11 @@ export default {
       },
       opened_project: "",
       new_project: {
-        title: "New Project",
-        work_dir: "newproject",
+        title: "New Contest",
+        work_dir: "newcontest",
         isSubmit: false,
       },
+      all_projects: [],
     };
   },
   mounted() {
@@ -216,6 +242,12 @@ export default {
     _t.sked = io("http://127.0.0.1:3000");
     _t.sked.on("connect", () => {
       _t.loading = false;
+      _t.new_project = {
+        title: "New Contest",
+        work_dir: "newcontest",
+        isSubmit: false,
+      };
+      _t.all_projects = [];
     });
     _t.sked.on("disconnect", () => {
       _t.loading = true;
@@ -234,6 +266,9 @@ export default {
     _t.sked.on("enter_project", (data) => {
       _t.opened_project = data;
       console.log(data);
+    });
+    _t.sked.on("all_projects", (data) => {
+      _t.all_projects = data.p;
     });
   },
   methods: {
@@ -264,8 +299,16 @@ export default {
         dir: _t.new_project.work_dir,
       });
     },
+    getAllProjects() {
+      const _t = this;
+      _t.sked.emit("all_projects", {});
+    },
     handleClick(tab, event) {
       console.log(tab, event);
+    },
+    enterProject(v) {
+      const _t = this
+      _t.sked.emit("open_project", v);
     },
   },
   components: {
